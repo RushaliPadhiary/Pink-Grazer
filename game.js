@@ -41,16 +41,24 @@
     // particle effects
     let particles = [];
 
-    // palette
     const palette = {
-      bg: '#1a0f1a',
-      player: '#ffe0f0',
-      playerInvincible: '#ffb0e0',
-      playerSpeed: '#fff0c0',
-      enemy: '#ff1a5c',
-      enemyFast: '#ff8c42',    // orange for fast enemy
-      enemyFrozen: '#a09fc0',   // frozen enemies
+      bg: '#0f0b1a',           
+      gridLines: '#ff66aa30',  
+      player: '#7ff5ff',        
+      playerInvincible: '#ffb3ff', 
+      playerSpeed: '#ffffb0',    
+      enemy: '#ff3a6f',         
+      enemyFast: '#ffaa33',      
+      enemyFrozen: '#9bb0d0',   
+      
+      // UI elements
       text: '#ffb3d9',
+      textBright: '#ffd9ec',
+      uiAccent: '#ff70b0',
+      
+      // effects
+      particleDamage: '#ff5a8f',
+      particleCollect: '#ffd966'
     };
 
     // particle effect
@@ -68,18 +76,20 @@
     function drawPixel(gx, gy, color) {
       ctx.fillStyle = color;
       ctx.fillRect(gx * PIXEL_SIZE, gy * PIXEL_SIZE, PIXEL_SIZE-1, PIXEL_SIZE-1);
-      ctx.fillStyle = '#ffffff30';
+      // inner highlight (lighter version of the color)
+      ctx.fillStyle = '#ffffff40';
       ctx.fillRect(gx * PIXEL_SIZE, gy * PIXEL_SIZE, PIXEL_SIZE-2, 2);
     }
 
     function drawBackground() {
       ctx.fillStyle = palette.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = '#ff99cc20';
+      
+      // more visible grid lines
+      ctx.strokeStyle = palette.gridLines;
       ctx.lineWidth = 1;
       for (let i = 0; i <= GRID_W; i++) {
         ctx.beginPath();
-        ctx.strokeStyle = '#ff99cc15';
         ctx.moveTo(i * PIXEL_SIZE, 0);
         ctx.lineTo(i * PIXEL_SIZE, canvas.height);
         ctx.stroke();
@@ -92,7 +102,6 @@
       }
     }
 
-    // FIXED: power-up types - ONLY EMOJIS, no colored boxes
     function spawnPowerup() {
       if (gameOver || gameWin) return;
       let x = Math.floor(Math.random() * GRID_W);
@@ -100,11 +109,11 @@
       
       let type = Math.random();
       if (type < 0.5) {
-        powerups.push({ x, y, type: 'health', emoji: '❤️' });
+        powerups.push({ x, y, type: 'health', emoji: '🍀' });
       } else if (type < 0.7) {
         powerups.push({ x, y, type: 'multiplier', emoji: '⭐' });
       } else if (type < 0.85) {
-        powerups.push({ x, y, type: 'speed', emoji: '⚡' });
+        powerups.push({ x, y, type: 'speed', emoji: '⚡️' });
       } else {
         powerups.push({ x, y, type: 'freeze', emoji: '❄️' });
       }
@@ -218,7 +227,7 @@
           if (enemies[i].x === player.x && enemies[i].y === player.y) {
             health--;
             for (let j = 0; j < 8; j++) {
-              particles.push(createParticle(player.x, player.y, '#ff1a5c'));
+              particles.push(createParticle(player.x, player.y, palette.particleDamage));
             }
             enemies.splice(i, 1);
             
@@ -242,7 +251,7 @@
         let p = powerups[i];
         if (p.x === player.x && p.y === player.y) {
           for (let j = 0; j < 6; j++) {
-            particles.push(createParticle(p.x, p.y, '#ffffff'));
+            particles.push(createParticle(p.x, p.y, palette.particleCollect));
           }
 
           switch(p.type) {
@@ -305,11 +314,10 @@
       }
       ctx.globalAlpha = 1;
 
-      // FIXED: draw powerups - ONLY EMOJIS, no boxes, contained in grid
+      // draw powerups
       for (let p of powerups) {
         ctx.font = '18px "Courier New", monospace';
         ctx.fillStyle = '#ffffff';
-        // center the emoji in the grid cell
         ctx.fillText(p.emoji, p.x * PIXEL_SIZE + 2, p.y * PIXEL_SIZE + 16);
       }
 
@@ -324,12 +332,12 @@
         ctx.fillRect(e.x * PIXEL_SIZE + 6, e.y * PIXEL_SIZE + 6, 5, 5);
         
         if (e.type === 'fast' && !enemyFreeze) {
-          ctx.fillStyle = '#ffaa00';
+          ctx.fillStyle = '#ffdd55';
           ctx.fillRect(e.x * PIXEL_SIZE + 2, e.y * PIXEL_SIZE + 2, 3, 3);
         }
       }
 
-      // draw player
+      // draw player - NEW COLORS
       if (!invincible || (invincible && Math.floor(Date.now() / 150) % 2 === 0)) {
         let playerColor = palette.player;
         if (speedBoost) playerColor = palette.playerSpeed;
@@ -337,44 +345,65 @@
         
         drawPixel(player.x, player.y, playerColor);
         
-        ctx.fillStyle = '#200018';
+        // player eyes
+        ctx.fillStyle = '#0a0a1a';
         ctx.fillRect(player.x * PIXEL_SIZE + 5, player.y * PIXEL_SIZE + 5, 4, 4);
-        ctx.fillStyle = '#ffd0dd';
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(player.x * PIXEL_SIZE + 8, player.y * PIXEL_SIZE + 8, 3, 3);
       }
 
       // UI with emojis
       ctx.font = '16px "Courier New", monospace';
-      ctx.fillStyle = '#ffb3c6';
+      ctx.fillStyle = palette.textBright;
       ctx.fillText('SCORE: ' + score, 580, 50);
       
       let yOffset = 70;
       if (scoreMultiplier > 1) {
-        ctx.fillStyle = '#ffd700';
+        ctx.fillStyle = '#ffd966';
         ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', 580, yOffset);
         yOffset += 20;
       }
       if (speedBoost) {
-        ctx.fillStyle = '#7ec8e0';
+        ctx.fillStyle = '#7ff5ff';
         ctx.fillText('⚡ SPEED BOOST', 580, yOffset);
         yOffset += 20;
       }
       if (enemyFreeze) {
-        ctx.fillStyle = '#aaddff';
+        ctx.fillStyle = '#9bb0d0';
         ctx.fillText('❄️ FROZEN', 580, yOffset);
       }
 
+      // FIXED: CENTERED GAME OVER AND WIN SCREENS
       if (gameOver) {
-        ctx.fillStyle = '#ff99ccf0';
+        // semi-transparent overlay
+        ctx.fillStyle = '#0f0b1ae0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#ff99cc';
         ctx.font = 'bold 48px "Courier New", monospace';
-        ctx.fillText('GAME OVER', 200, 280);
-        ctx.font = '24px monospace';
-        ctx.fillStyle = '#ffe0f0';
-        ctx.fillText('score: ' + score, 320, 380);
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', 400, 280);
+        
+        ctx.font = '24px "Courier New", monospace';
+        ctx.fillStyle = '#ffd9ec';
+        ctx.fillText('score: ' + score, 400, 340);
+        ctx.fillText('press RESTART', 400, 380);
+        ctx.textAlign = 'left';
       } else if (gameWin) {
-        ctx.fillStyle = '#ffd700';
+        // semi-transparent overlay
+        ctx.fillStyle = '#0f0b1ae0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#ffd966';
         ctx.font = 'bold 48px "Courier New", monospace';
-        ctx.fillText('✨ VICTORY ✨', 180, 280);
+        ctx.textAlign = 'center';
+        ctx.fillText('✨ VICTORY ✨', 400, 280);
+        
+        ctx.font = '24px "Courier New", monospace';
+        ctx.fillStyle = '#ffd9ec';
+        ctx.fillText('final score: ' + score, 400, 340);
+        ctx.fillText('you win!', 400, 380);
+        ctx.textAlign = 'left';
       }
     }
 
