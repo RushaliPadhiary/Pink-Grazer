@@ -3,7 +3,6 @@
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    // pixel size (each game unit = 20x20 px) — 40x30 grid
     const PIXEL_SIZE = 20;
     const GRID_W = 40;
     const GRID_H = 30;
@@ -19,29 +18,52 @@
     let invincible = false;
     let invincibleTimer = 0;
 
-    // FIX: enemy speed control - add move timer
-    let enemyMoveCounter = 0;
-    const ENEMY_MOVE_DELAY = 10; // enemies move every 8 frames instead of every frame
+    // power-ups and effects
+    let speedBoost = false;
+    let speedTimer = 0;
+    let enemyFreeze = false;
+    let freezeTimer = 0;
+    let scoreMultiplier = 1;
+    let multiplierTimer = 0;
 
-    // movement direction (key states)
+    // enemy types
+    let enemyMoveCounter = 0;
+    const ENEMY_MOVE_DELAY = 8;
+
     const keys = {
       ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
     };
 
-    // spawn control
     let frameCounter = 0;
     const ENEMY_SPAWN_RATE = 45;
-    const POWERUP_SPAWN_RATE = 180;
+    const POWERUP_SPAWN_RATE = 120;
 
-    // ----- palette -----
+    // particle effects
+    let particles = [];
+
+    // palette
     const palette = {
       bg: '#1a0f1a',
       player: '#ffe0f0',
       playerInvincible: '#ffb0e0',
-      enemy: '#ff1a5c', // single red color for enemy
-      powerup: '#b0ffb0', // green for health
+      playerSpeed: '#fff0c0',
+      enemy: '#ff1a5c',
+      enemyFast: '#ff8c42',    // orange for fast enemy
+      enemyFrozen: '#a09fc0',   // frozen enemies
       text: '#ffb3d9',
     };
+
+    // particle effect
+    function createParticle(x, y, color) {
+      return {
+        x: x * PIXEL_SIZE + 10,
+        y: y * PIXEL_SIZE + 10,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
+        life: 15,
+        color: color
+      };
+    }
 
     function drawPixel(gx, gy, color) {
       ctx.fillStyle = color;
@@ -53,7 +75,6 @@
     function drawBackground() {
       ctx.fillStyle = palette.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // subtle grid lines
       ctx.strokeStyle = '#ff99cc20';
       ctx.lineWidth = 1;
       for (let i = 0; i <= GRID_W; i++) {
@@ -71,6 +92,24 @@
       }
     }
 
+    // FIXED: power-up types - ONLY EMOJIS, no colored boxes
+    function spawnPowerup() {
+      if (gameOver || gameWin) return;
+      let x = Math.floor(Math.random() * GRID_W);
+      let y = Math.floor(Math.random() * GRID_H);
+      
+      let type = Math.random();
+      if (type < 0.5) {
+        powerups.push({ x, y, type: 'health', emoji: '❤️' });
+      } else if (type < 0.7) {
+        powerups.push({ x, y, type: 'multiplier', emoji: '⭐' });
+      } else if (type < 0.85) {
+        powerups.push({ x, y, type: 'speed', emoji: '⚡' });
+      } else {
+        powerups.push({ x, y, type: 'freeze', emoji: '❄️' });
+      }
+    }
+
     function spawnEnemy() {
       if (gameOver || gameWin) return;
       let side = Math.floor(Math.random() * 4);
@@ -81,33 +120,33 @@
       else if (side === 2) { x = Math.floor(Math.random() * GRID_W); y = GRID_H - 1; }
       else { x = 0; y = Math.floor(Math.random() * GRID_H); }
 
-      enemies.push({ x, y });
-    }
-
-    function spawnPowerup() {
-      if (gameOver || gameWin) return;
-      let x = Math.floor(Math.random() * GRID_W);
-      let y = Math.floor(Math.random() * GRID_H);
-      powerups.push({ x, y });
+      let type = Math.random() < 0.2 ? 'fast' : 'normal';
+      enemies.push({ x, y, type });
     }
 
     function resetGame() {
       player = { x: 20, y: 15 };
       enemies = [];
       powerups = [];
+      particles = [];
       score = 0;
       health = 3;
       gameOver = false;
       gameWin = false;
       invincible = false;
       invincibleTimer = 0;
+      speedBoost = false;
+      speedTimer = 0;
+      enemyFreeze = false;
+      freezeTimer = 0;
+      scoreMultiplier = 1;
+      multiplierTimer = 0;
       frameCounter = 0;
       enemyMoveCounter = 0;
       updateDisplay();
       
-      // initial spawn
       for (let i = 0; i < 3; i++) spawnEnemy();
-      for (let i = 0; i < 2; i++) spawnPowerup();
+      for (let i = 0; i < 3; i++) spawnPowerup();
     }
 
     function updateDisplay() {
@@ -118,7 +157,19 @@
     function gameTick() {
       if (gameOver || gameWin) return;
 
-      // ----- player movement -----
+      if (speedBoost) {
+        speedTimer--;
+        if (speedTimer <= 0) speedBoost = false;
+      }
+      if (enemyFreeze) {
+        freezeTimer--;
+        if (freezeTimer <= 0) enemyFreeze = false;
+      }
+      if (multiplierTimer > 0) {
+        multiplierTimer--;
+        if (multiplierTimer <= 0) scoreMultiplier = 1;
+      }
+
       let dx = 0, dy = 0;
       if (keys.ArrowUp) dy = -1;
       if (keys.ArrowDown) dy = 1;
@@ -126,17 +177,21 @@
       if (keys.ArrowRight) dx = 1;
 
       if (dx !== 0 || dy !== 0) {
-        let newX = player.x + dx;
-        let newY = player.y + dy;
-        if (newX >= 0 && newX < GRID_W && newY >= 0 && newY < GRID_H) {
-          player.x = newX;
-          player.y = newY;
+        let steps = speedBoost ? 2 : 1;
+        for (let s = 0; s < steps; s++) {
+          let newX = player.x + dx;
+          let newY = player.y + dy;
+          if (newX >= 0 && newX < GRID_W && newY >= 0 && newY < GRID_H) {
+            player.x = newX;
+            player.y = newY;
+          }
         }
       }
 
-      // ----- enemies move slower -----
       enemyMoveCounter++;
-      if (enemyMoveCounter >= ENEMY_MOVE_DELAY) {
+      let moveDelay = enemyFreeze ? ENEMY_MOVE_DELAY * 3 : ENEMY_MOVE_DELAY;
+      
+      if (enemyMoveCounter >= moveDelay) {
         enemyMoveCounter = 0;
         
         for (let e of enemies) {
@@ -146,8 +201,9 @@
           if (e.y < player.y) dy = 1;
           if (e.y > player.y) dy = -1;
           
-          // 60% move both axes, 40% move one axis
-          if (Math.random() < 0.6) {
+          let moveChance = (e.type === 'fast' && !enemyFreeze) ? 0.8 : 0.6;
+          
+          if (Math.random() < moveChance) {
             e.x = Math.min(GRID_W-1, Math.max(0, e.x + dx));
             e.y = Math.min(GRID_H-1, Math.max(0, e.y + dy));
           } else {
@@ -157,11 +213,13 @@
         }
       }
 
-      // ----- enemy-player collision -----
       if (!invincible) {
         for (let i = enemies.length - 1; i >= 0; i--) {
           if (enemies[i].x === player.x && enemies[i].y === player.y) {
             health--;
+            for (let j = 0; j < 8; j++) {
+              particles.push(createParticle(player.x, player.y, '#ff1a5c'));
+            }
             enemies.splice(i, 1);
             
             if (health <= 0) {
@@ -170,7 +228,7 @@
             }
             
             invincible = true;
-            invincibleTimer = 15;
+            invincibleTimer = 20;
             updateDisplay();
             break;
           }
@@ -180,80 +238,144 @@
         if (invincibleTimer <= 0) invincible = false;
       }
 
-      // ----- powerup collection (green hearts = health) -----
       for (let i = powerups.length - 1; i >= 0; i--) {
-        if (powerups[i].x === player.x && powerups[i].y === player.y) {
-          score += 10;
-          health = Math.min(health + 1, 5); // max 5 health
+        let p = powerups[i];
+        if (p.x === player.x && p.y === player.y) {
+          for (let j = 0; j < 6; j++) {
+            particles.push(createParticle(p.x, p.y, '#ffffff'));
+          }
+
+          switch(p.type) {
+            case 'health':
+              health = Math.min(health + 2, 5);
+              score += 10 * scoreMultiplier;
+              break;
+            case 'multiplier':
+              scoreMultiplier = 3;
+              multiplierTimer = 300;
+              score += 20;
+              break;
+            case 'speed':
+              speedBoost = true;
+              speedTimer = 180;
+              score += 15 * scoreMultiplier;
+              break;
+            case 'freeze':
+              enemyFreeze = true;
+              freezeTimer = 180;
+              score += 15 * scoreMultiplier;
+              break;
+          }
+          
           powerups.splice(i, 1);
           updateDisplay();
           
-          if (score >= 300) {
+          if (score >= 500) {
             gameWin = true;
           }
         }
       }
 
-      // ----- spawning -----
       frameCounter++;
-      if (frameCounter % ENEMY_SPAWN_RATE === 0 && enemies.length < 15) {
+      if (frameCounter % ENEMY_SPAWN_RATE === 0 && enemies.length < 12) {
         spawnEnemy();
       }
-      if (frameCounter % POWERUP_SPAWN_RATE === 0 && powerups.length < 6) {
+      if (frameCounter % POWERUP_SPAWN_RATE === 0 && powerups.length < 8) {
         spawnPowerup();
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].x += particles[i].vx;
+        particles[i].y += particles[i].vy;
+        particles[i].life--;
+        if (particles[i].life <= 0) {
+          particles.splice(i, 1);
+        }
       }
     }
 
     function draw() {
       drawBackground();
 
-      // draw powerups (green)
+      // particles
+      for (let p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / 20;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+      ctx.globalAlpha = 1;
+
+      // FIXED: draw powerups - ONLY EMOJIS, no boxes, contained in grid
       for (let p of powerups) {
-        drawPixel(p.x, p.y, palette.powerup);
-        // white highlight
-        ctx.fillStyle = '#ffffffb0';
-        ctx.fillRect(p.x * PIXEL_SIZE + 4, p.y * PIXEL_SIZE + 4, 4, 4);
+        ctx.font = '18px "Courier New", monospace';
+        ctx.fillStyle = '#ffffff';
+        // center the emoji in the grid cell
+        ctx.fillText(p.emoji, p.x * PIXEL_SIZE + 2, p.y * PIXEL_SIZE + 16);
       }
 
-      // draw enemies (red)
+      // draw enemies
       for (let e of enemies) {
-        drawPixel(e.x, e.y, palette.enemy);
-        // dark eye
+        let color = palette.enemy;
+        if (enemyFreeze) color = palette.enemyFrozen;
+        else if (e.type === 'fast') color = palette.enemyFast;
+        
+        drawPixel(e.x, e.y, color);
         ctx.fillStyle = '#2d0020';
         ctx.fillRect(e.x * PIXEL_SIZE + 6, e.y * PIXEL_SIZE + 6, 5, 5);
+        
+        if (e.type === 'fast' && !enemyFreeze) {
+          ctx.fillStyle = '#ffaa00';
+          ctx.fillRect(e.x * PIXEL_SIZE + 2, e.y * PIXEL_SIZE + 2, 3, 3);
+        }
       }
 
-      // draw player (white/pink)
+      // draw player
       if (!invincible || (invincible && Math.floor(Date.now() / 150) % 2 === 0)) {
-        drawPixel(player.x, player.y, invincible ? palette.playerInvincible : palette.player);
-        // player eyes
+        let playerColor = palette.player;
+        if (speedBoost) playerColor = palette.playerSpeed;
+        else if (invincible) playerColor = palette.playerInvincible;
+        
+        drawPixel(player.x, player.y, playerColor);
+        
         ctx.fillStyle = '#200018';
         ctx.fillRect(player.x * PIXEL_SIZE + 5, player.y * PIXEL_SIZE + 5, 4, 4);
         ctx.fillStyle = '#ffd0dd';
         ctx.fillRect(player.x * PIXEL_SIZE + 8, player.y * PIXEL_SIZE + 8, 3, 3);
       }
 
-      // game messages
+      // UI with emojis
+      ctx.font = '16px "Courier New", monospace';
+      ctx.fillStyle = '#ffb3c6';
+      ctx.fillText('SCORE: ' + score, 580, 50);
+      
+      let yOffset = 70;
+      if (scoreMultiplier > 1) {
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', 580, yOffset);
+        yOffset += 20;
+      }
+      if (speedBoost) {
+        ctx.fillStyle = '#7ec8e0';
+        ctx.fillText('⚡ SPEED BOOST', 580, yOffset);
+        yOffset += 20;
+      }
+      if (enemyFreeze) {
+        ctx.fillStyle = '#aaddff';
+        ctx.fillText('❄️ FROZEN', 580, yOffset);
+      }
+
       if (gameOver) {
         ctx.fillStyle = '#ff99ccf0';
         ctx.font = 'bold 48px "Courier New", monospace';
         ctx.fillText('GAME OVER', 200, 280);
         ctx.font = '24px monospace';
         ctx.fillStyle = '#ffe0f0';
-        ctx.fillText('press RESTART', 280, 380);
+        ctx.fillText('score: ' + score, 320, 380);
       } else if (gameWin) {
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 48px "Courier New", monospace';
-        ctx.fillText('✨ WIN ✨', 240, 280);
-        ctx.font = '24px monospace';
-        ctx.fillStyle = '#ffb0d0';
-        ctx.fillText('you win!', 300, 380);
+        ctx.fillText('✨ VICTORY ✨', 180, 280);
       }
-
-      // score display 
-      ctx.font = '20px "Courier New", monospace';
-      ctx.fillStyle = '#ffb3c6';
-      ctx.fillText('SCORE: ' + score, 620, 50);
     }
 
     function loop() {
@@ -262,7 +384,6 @@
       requestAnimationFrame(loop);
     }
 
-    // keyboard handling
     window.addEventListener('keydown', (e) => {
       if (e.key.startsWith('Arrow')) {
         e.preventDefault();
@@ -281,19 +402,15 @@
       }
     });
 
-    // prevent page scrolling
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
       }
     }, {passive: false});
 
-    // reset button
     document.getElementById('resetBtn').addEventListener('click', resetGame);
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // start
     resetGame();
     loop();
-
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 })();
