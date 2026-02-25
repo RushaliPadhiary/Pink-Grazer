@@ -4,11 +4,11 @@
     ctx.imageSmoothingEnabled = false;
 
     const PIXEL_SIZE = 20;
-    const GRID_W = 40;
+    const GRID_W = 50;
     const GRID_H = 30;
 
     // game state
-    let player = { x: 20, y: 15 };
+    let player = { x: 25, y: 15 };
     let enemies = [];
     let powerups = [];
     let score = 0;
@@ -76,7 +76,7 @@
     function drawPixel(gx, gy, color) {
       ctx.fillStyle = color;
       ctx.fillRect(gx * PIXEL_SIZE, gy * PIXEL_SIZE, PIXEL_SIZE-1, PIXEL_SIZE-1);
-      // inner highlight (lighter version of the color)
+      // inner highlight 
       ctx.fillStyle = '#ffffff40';
       ctx.fillRect(gx * PIXEL_SIZE, gy * PIXEL_SIZE, PIXEL_SIZE-2, 2);
     }
@@ -304,108 +304,107 @@
     }
 
     function draw() {
-      drawBackground();
+  drawBackground();
 
-      // particles
-      for (let p of particles) {
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.life / 20;
-        ctx.fillRect(p.x, p.y, 3, 3);
-      }
-      ctx.globalAlpha = 1;
+  // particles
+  for (let p of particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life / 20;
+    ctx.fillRect(p.x, p.y, 3, 3);
+  }
+  ctx.globalAlpha = 1;
 
-      // draw powerups
-      for (let p of powerups) {
-        ctx.font = '18px "Courier New", monospace';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(p.emoji, p.x * PIXEL_SIZE + 2, p.y * PIXEL_SIZE + 16);
-      }
+  // draw powerups
+  for (let p of powerups) {
+    ctx.font = '18px "Courier New", monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(p.emoji, p.x * PIXEL_SIZE + 2, p.y * PIXEL_SIZE + 16);
+  }
 
-      // draw enemies
-      for (let e of enemies) {
-        let color = palette.enemy;
-        if (enemyFreeze) color = palette.enemyFrozen;
-        else if (e.type === 'fast') color = palette.enemyFast;
-        
-        drawPixel(e.x, e.y, color);
-        ctx.fillStyle = '#2d0020';
-        ctx.fillRect(e.x * PIXEL_SIZE + 6, e.y * PIXEL_SIZE + 6, 5, 5);
-        
-        if (e.type === 'fast' && !enemyFreeze) {
-          ctx.fillStyle = '#ffdd55';
-          ctx.fillRect(e.x * PIXEL_SIZE + 2, e.y * PIXEL_SIZE + 2, 3, 3);
-        }
-      }
-
-      // draw player - NEW COLORS
-      if (!invincible || (invincible && Math.floor(Date.now() / 150) % 2 === 0)) {
-        let playerColor = palette.player;
-        if (speedBoost) playerColor = palette.playerSpeed;
-        else if (invincible) playerColor = palette.playerInvincible;
-        
-        drawPixel(player.x, player.y, playerColor);
-        
-        // player eyes
-        ctx.fillStyle = '#0a0a1a';
-        ctx.fillRect(player.x * PIXEL_SIZE + 5, player.y * PIXEL_SIZE + 5, 4, 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(player.x * PIXEL_SIZE + 8, player.y * PIXEL_SIZE + 8, 3, 3);
-      }
-
-      // UI with emojis
-      ctx.font = '16px "Courier New", monospace';
-      ctx.fillStyle = palette.textBright;
-      ctx.fillText('SCORE: ' + score, 580, 50);
-      
-      let yOffset = 70;
-      if (scoreMultiplier > 1) {
-        ctx.fillStyle = '#ffd966';
-        ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', 580, yOffset);
-        yOffset += 20;
-      }
-      if (speedBoost) {
-        ctx.fillStyle = '#7ff5ff';
-        ctx.fillText('⚡ SPEED BOOST', 580, yOffset);
-        yOffset += 20;
-      }
-      if (enemyFreeze) {
-        ctx.fillStyle = '#9bb0d0';
-        ctx.fillText('❄️ FROZEN', 580, yOffset);
-      }
-
-      // FIXED: CENTERED GAME OVER AND WIN SCREENS
-      if (gameOver) {
-        // semi-transparent overlay
-        ctx.fillStyle = '#0f0b1ae0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#ff99cc';
-        ctx.font = 'bold 48px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', 400, 280);
-        
-        ctx.font = '24px "Courier New", monospace';
-        ctx.fillStyle = '#ffd9ec';
-        ctx.fillText('score: ' + score, 400, 340);
-        ctx.fillText('press RESTART', 400, 380);
-        ctx.textAlign = 'left';
-      } else if (gameWin) {
-        // semi-transparent overlay
-        ctx.fillStyle = '#0f0b1ae0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#ffd966';
-        ctx.font = 'bold 48px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('✨ VICTORY ✨', 400, 280);
-        
-        ctx.font = '24px "Courier New", monospace';
-        ctx.fillStyle = '#ffd9ec';
-        ctx.fillText('final score: ' + score, 400, 340);
-        ctx.fillText('you win!', 400, 380);
-        ctx.textAlign = 'left';
-      }
+  // draw enemies
+  for (let e of enemies) {
+    let color = palette.enemy;
+    if (enemyFreeze) color = palette.enemyFrozen;
+    else if (e.type === 'fast') color = palette.enemyFast;
+    
+    drawPixel(e.x, e.y, color);
+    ctx.fillStyle = '#2d0020';
+    ctx.fillRect(e.x * PIXEL_SIZE + 6, e.y * PIXEL_SIZE + 6, 5, 5);
+    
+    if (e.type === 'fast' && !enemyFreeze) {
+      ctx.fillStyle = '#ffdd55';
+      ctx.fillRect(e.x * PIXEL_SIZE + 2, e.y * PIXEL_SIZE + 2, 3, 3);
     }
+  }
+
+  // draw player
+  if (!invincible || (invincible && Math.floor(Date.now() / 150) % 2 === 0)) {
+    let playerColor = palette.player;
+    if (speedBoost) playerColor = palette.playerSpeed;
+    else if (invincible) playerColor = palette.playerInvincible;
+    
+    drawPixel(player.x, player.y, playerColor);
+    
+    // player eyes
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(player.x * PIXEL_SIZE + 5, player.y * PIXEL_SIZE + 5, 4, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(player.x * PIXEL_SIZE + 8, player.y * PIXEL_SIZE + 8, 3, 3);
+  }
+
+  // UI with emojis
+  ctx.font = '16px "Courier New", monospace';
+  ctx.fillStyle = palette.textBright;
+  ctx.fillText('SCORE: ' + score, 780, 50); 
+  
+  let yOffset = 70;
+  if (scoreMultiplier > 1) {
+    ctx.fillStyle = '#ffd966';
+    ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', 780, yOffset);
+    yOffset += 20;
+  }
+  if (speedBoost) {
+    ctx.fillStyle = '#7ff5ff';
+    ctx.fillText('⚡ SPEED BOOST', 780, yOffset);
+    yOffset += 20;
+  }
+  if (enemyFreeze) {
+    ctx.fillStyle = '#9bb0d0';
+    ctx.fillText('❄️ FROZEN', 780, yOffset);
+  }
+
+  if (gameOver) {
+    // semi-transparent overlay
+    ctx.fillStyle = '#0f0b1ae0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#ff99cc';
+    ctx.font = 'bold 48px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', 500, 280); 
+    
+    ctx.font = '24px "Courier New", monospace';
+    ctx.fillStyle = '#ffd9ec';
+    ctx.fillText('score: ' + score, 500, 340); 
+    ctx.fillText('press RESTART', 500, 380); 
+    ctx.textAlign = 'left';
+  } else if (gameWin) {
+    // semi-transparent overlay
+    ctx.fillStyle = '#0f0b1ae0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#ffd966';
+    ctx.font = 'bold 48px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('✨ VICTORY ✨', 500, 280); 
+    
+    ctx.font = '24px "Courier New", monospace';
+    ctx.fillStyle = '#ffd9ec';
+    ctx.fillText('final score: ' + score, 500, 340); 
+    ctx.fillText('you win!', 500, 380); 
+    ctx.textAlign = 'left';
+  }
+}
 
     function loop() {
       gameTick();

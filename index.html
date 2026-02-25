@@ -5,23 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PIXEL GRAZER</title>
   <link rel="stylesheet" href="styles.css">
-
 </head>
 <body>
 <div class="game-wrapper">
-  <!-- canvas element – all drawing is pixelated via JS -->
-  <canvas id="pixelCanvas" width="800" height="600"></canvas>
+  <canvas id="pixelCanvas" width="1000" height="600"></canvas>
   
   <div class="pixel-panel">
     <div>❤️ <span id="scoreDisplay">0000</span></div>
     <div>⚡ <span id="healthDisplay">03</span></div>
     <button class="pixel-btn" id="resetBtn">↺ RESTART</button>
   </div>
+  
+  <!-- lEGENDS -->
   <div class="legend">
-    <div><div class="pixel-badge player"></div> YOU</div>
-    <div><div class="pixel-badge enemy"></div> ENEMY</div>
-    <div><div class="pixel-badge power"></div> HEART</div>
-    <div>⬆️⬇️⬅️➡️ MOVE</div>
+    <!-- Player -->
+    <div class="legend-item">
+      <div class="pixel-badge" style="background: #7ff5ff;"></div>
+      <span>YOU</span>
+    </div>
+    
+    <!-- Enemies -->
+    <div class="legend-item">
+      <div class="pixel-badge" style="background: #ff3a6f;"></div>
+      <span>ENEMY</span>
+    </div>
+    
+    <div class="legend-item">
+      <div class="pixel-badge" style="background: #ffaa33;"></div>
+      <span>FAST ENEMY</span>
+    </div>
+    
+    <div class="legend-item">
+      <div class="pixel-badge" style="background: #9bb0d0;"></div>
+      <span>FROZEN</span>
+    </div>
+    
+    <span class="legend-divider">|</span>
+    
+    <!-- Power-ups -->
+    <div class="legend-item">
+      <span class="emoji">🍀</span>
+      <span>HEAL</span>
+    </div>
+    
+    <div class="legend-item">
+      <span class="emoji">⭐</span>
+      <span>BOOST</span>
+    </div>
+    
+    <div class="legend-item">
+      <span class="emoji">⚡</span>
+      <span>SPEED</span>
+    </div>
+    
+    <div class="legend-item">
+      <span class="emoji">❄️</span>
+      <span>FREEZE</span>
+    </div>
+    
+    <span class="legend-divider">|</span>
+    
+    <!-- Controls -->
+    <div class="legend-item">
+      <span>⬆️⬇️⬅️➡️</span>
+      <span>MOVE</span>
+    </div>
   </div>
 </div>
 <script src="game.js"></script>
