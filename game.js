@@ -6,9 +6,13 @@
     const PIXEL_SIZE = 20;
     const GRID_W = 50;
     const GRID_H = 30;
+    
+    // Set canvas size based on grid dimensions
+    canvas.width = GRID_W * PIXEL_SIZE;
+    canvas.height = GRID_H * PIXEL_SIZE;
 
     // game state
-    let player = { x: 25, y: 15 };
+    let player = { x: Math.floor(GRID_W / 2), y: Math.floor(GRID_H / 2) }; // Center player
     let enemies = [];
     let powerups = [];
     let score = 0;
@@ -134,7 +138,7 @@
     }
 
     function resetGame() {
-      player = { x: 20, y: 15 };
+      player = { x: Math.floor(GRID_W / 2), y: Math.floor(GRID_H / 2) }; // Center player
       enemies = [];
       powerups = [];
       particles = [];
@@ -355,22 +359,22 @@
   // UI with emojis
   ctx.font = '16px "Courier New", monospace';
   ctx.fillStyle = palette.textBright;
-  ctx.fillText('SCORE: ' + score, 780, 50); 
+  ctx.fillText('SCORE: ' + score, canvas.width - 220, 50); 
   
   let yOffset = 70;
   if (scoreMultiplier > 1) {
     ctx.fillStyle = '#ffd966';
-    ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', 780, yOffset);
+    ctx.fillText('⭐ x' + scoreMultiplier + ' MULTI!', canvas.width - 220, yOffset);
     yOffset += 20;
   }
   if (speedBoost) {
     ctx.fillStyle = '#7ff5ff';
-    ctx.fillText('⚡ SPEED BOOST', 780, yOffset);
+    ctx.fillText('⚡ SPEED BOOST', canvas.width - 220, yOffset);
     yOffset += 20;
   }
   if (enemyFreeze) {
     ctx.fillStyle = '#9bb0d0';
-    ctx.fillText('❄️ FROZEN', 780, yOffset);
+    ctx.fillText('❄️ FROZEN', canvas.width - 220, yOffset);
   }
 
   if (gameOver) {
@@ -381,12 +385,12 @@
     ctx.fillStyle = '#ff99cc';
     ctx.font = 'bold 48px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', 500, 280); 
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40); 
     
     ctx.font = '24px "Courier New", monospace';
     ctx.fillStyle = '#ffd9ec';
-    ctx.fillText('score: ' + score, 500, 340); 
-    ctx.fillText('press RESTART', 500, 380); 
+    ctx.fillText('score: ' + score, canvas.width / 2, canvas.height / 2 + 20); 
+    ctx.fillText('press RESTART', canvas.width / 2, canvas.height / 2 + 60); 
     ctx.textAlign = 'left';
   } else if (gameWin) {
     // semi-transparent overlay
@@ -396,12 +400,12 @@
     ctx.fillStyle = '#ffd966';
     ctx.font = 'bold 48px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('✨ VICTORY ✨', 500, 280); 
+    ctx.fillText('✨ VICTORY ✨', canvas.width / 2, canvas.height / 2 - 40); 
     
     ctx.font = '24px "Courier New", monospace';
     ctx.fillStyle = '#ffd9ec';
-    ctx.fillText('final score: ' + score, 500, 340); 
-    ctx.fillText('you win!', 500, 380); 
+    ctx.fillText('final score: ' + score, canvas.width / 2, canvas.height / 2 + 20); 
+    ctx.fillText('you win!', canvas.width / 2, canvas.height / 2 + 60); 
     ctx.textAlign = 'left';
   }
 }
